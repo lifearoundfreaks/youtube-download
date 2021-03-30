@@ -12,12 +12,13 @@ def setup_bot(**kwargs):
     @bot.message_handler(commands=['start'])
     def start(message):
 
-        bot.reply_to(message, 'Hello, ' + message.from_user.first_name)
+        bot.send_message(
+            message.chat.id, 'Hello, ' + message.from_user.first_name)
 
     @bot.message_handler(commands=['ping'])
     def ping(message):
 
-        bot.reply_to(message, 'pong')
+        bot.send_message(message.chat.id, 'pong')
 
     bot.remove_webhook()
     bot.set_webhook(url=f'{env("WEB_APP_DOMAIN")}/{env("TELEGRAM_BOT_TOKEN")}')
