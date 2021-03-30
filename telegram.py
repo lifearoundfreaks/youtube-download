@@ -1,10 +1,13 @@
 import telebot
 from os import getenv as env
+import logging
 
 
 def setup_bot(**kwargs):
 
     bot = telebot.TeleBot(env("TELEGRAM_BOT_TOKEN"))
+    logger = telebot.logger
+    telebot.logger.setLevel(logging.DEBUG)
 
     @bot.message_handler(commands=['start'])
     def start(message):
