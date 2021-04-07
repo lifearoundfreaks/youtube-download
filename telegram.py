@@ -23,6 +23,8 @@ def setup_bot(**kwargs):
 
     @bot.callback_query_handler(func=lambda call: True)
     def callback_query(call):
+        redis_queue.enqueue(
+            video.download, call.from_user.id, *call.data.split())
         bot.answer_callback_query(call.id, call.data)
         bot.delete_message(call.from_user.id, call.message.id)
 
@@ -41,16 +43,6 @@ def setup_bot(**kwargs):
         except Exception:
             bot.send_message(
                 message.chat.id, 'There was something wrong with your link.')
-
-    # @bot.message_handler(commands=['work'])
-    # def work(message):
-
-    #     position = len(redis_queue.jobs) + 1
-    #     redis_queue.enqueue(rq_work, message.chat.id)
-    #     bot.send_message(
-    #         message.chat.id,
-    #         f'Job added. It is currently in #{position} position.'
-    #     )
 
     bot.remove_webhook()
     bot.set_webhook(url=f'{env("WEB_APP_DOMAIN")}/{env("TELEGRAM_BOT_TOKEN")}')
