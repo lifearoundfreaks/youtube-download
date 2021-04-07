@@ -16,9 +16,15 @@ AUDIO_SETTINGS = {
 }
 
 
+def validate_url(url):
+
+    split_url = url.split("&")
+    return split_url[0] if split_url else ""
+
+
 def get_resolutions(url):
 
-    yt = YouTube(url)
+    yt = YouTube(validate_url(url))
     if yt.publish_date is None:
         raise ValueError
     return list({
@@ -34,7 +40,7 @@ def download(chat_id, url, resolution):
     except OSError:
         pass
 
-    yt = YouTube(url)
+    yt = YouTube(validate_url(url))
     video = yt.streams.filter(**VIDEO_SETTINGS).first().download(
         filename='video')
     video_stream = ffmpeg.input('video')
