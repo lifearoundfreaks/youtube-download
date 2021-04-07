@@ -39,8 +39,11 @@ def setup_bot(**kwargs):
     @bot.message_handler(commands=['work'])
     def work(message):
 
-        bot.send_message(message.chat.id, 'Job added.')
         redis_queue.enqueue(rq_work, message.chat.id)
+        bot.send_message(
+            message.chat.id,
+            f'Job added. It is currently in #{len(redis_queue.jobs)} position.'
+        )
 
     bot.remove_webhook()
     bot.set_webhook(url=f'{env("WEB_APP_DOMAIN")}/{env("TELEGRAM_BOT_TOKEN")}')
