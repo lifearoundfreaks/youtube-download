@@ -3,20 +3,9 @@ from os import getenv as env
 import logging
 from rq import Queue
 from worker import conn
-from time import sleep
+from utils import get_bot
 
 redis_queue = Queue(connection=conn)
-
-
-def get_bot():
-
-    return telebot.TeleBot(env("TELEGRAM_BOT_TOKEN"))
-
-
-def rq_work(chat_id):
-
-    sleep(10)
-    get_bot().send_message(chat_id, 'Some computationally hard response.')
 
 
 def setup_bot(**kwargs):
@@ -31,19 +20,23 @@ def setup_bot(**kwargs):
         bot.send_message(
             message.chat.id, 'Hello, ' + message.from_user.first_name)
 
-    @bot.message_handler(commands=['ping'])
-    def ping(message):
-
-        bot.send_message(message.chat.id, 'pong')
-
-    @bot.message_handler(commands=['work'])
-    def work(message):
-
-        redis_queue.enqueue(rq_work, message.chat.id)
+    @bot.message_handler(commands=['video'])
+    def video(message):
+        keyboard = telebot.types.ReplyKeyboardMarkup(
+            row_width=1, one_time_keyboard=True)
+        keyboard.add("one", "two", "three")
         bot.send_message(
-            message.chat.id,
-            f'Job added. It is currently in #{len(redis_queue.jobs)} position.'
-        )
+            message.chat.id, 'Pick available format', reply_markup=keyboard)
+
+    # @bot.message_handler(commands=['work'])
+    # def work(message):
+
+    #     position = len(redis_queue.jobs) + 1
+    #     redis_queue.enqueue(rq_work, message.chat.id)
+    #     bot.send_message(
+    #         message.chat.id,
+    #         f'Job added. It is currently in #{position} position.'
+    #     )
 
     bot.remove_webhook()
     bot.set_webhook(url=f'{env("WEB_APP_DOMAIN")}/{env("TELEGRAM_BOT_TOKEN")}')
