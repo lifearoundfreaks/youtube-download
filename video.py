@@ -8,4 +8,5 @@ def get_resolutions(url):
         raise ValueError
     return list({
         stream.resolution: None
-        for stream in yt.streams.filter(only_video=True).asc()})
+        for stream in yt.streams.filter(only_video=True, adaptive=True).asc()
+    })

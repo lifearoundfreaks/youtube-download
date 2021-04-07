@@ -21,14 +21,23 @@ def setup_bot(**kwargs):
         bot.send_message(
             message.chat.id, 'Hello, ' + message.from_user.first_name)
 
+    @bot.callback_query_handler(func=lambda call: True)
+    def callback_query(call):
+        bot.answer_callback_query(call.id, call.data)
+        bot.delete_message(call.from_user.id, call.message.id)
+
     @bot.message_handler(func=lambda message: True)
     def message_receiver(message):
         try:
-            keyboard = telebot.types.ReplyKeyboardMarkup(
-                row_width=1, one_time_keyboard=True)
-            keyboard.add(*video.get_resolutions(message.text))
+            keyboard = telebot.types.InlineKeyboardMarkup([
+                [telebot.types.InlineKeyboardButton(
+                    resolution, callback_data=f"{message.text} {resolution}")]
+                for resolution in video.get_resolutions(message.text)
+            ])
             bot.send_message(
-                message.chat.id, 'Pick available resolution.', reply_markup=keyboard)
+                message.chat.id, 'Pick available resolution.',
+                reply_markup=keyboard
+            )
         except Exception:
             bot.send_message(
                 message.chat.id, 'There was something wrong with your link.')
