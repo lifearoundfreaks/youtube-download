@@ -1,11 +1,27 @@
 import telebot
 from os import getenv as env
 import logging
+from rq import Queue
+from worker import conn
+from time import sleep
+
+redis_queue = Queue(connection=conn)
+
+
+def get_bot():
+
+    return telebot.TeleBot(env("TELEGRAM_BOT_TOKEN"))
+
+
+def rq_work(chat_id):
+
+    sleep(10)
+    get_bot().send_message(chat_id, 'Some computationally hard response.')
 
 
 def setup_bot(**kwargs):
 
-    bot = telebot.TeleBot(env("TELEGRAM_BOT_TOKEN"))
+    bot = get_bot()
     logger = telebot.logger
     telebot.logger.setLevel(logging.DEBUG)
 
@@ -19,6 +35,12 @@ def setup_bot(**kwargs):
     def ping(message):
 
         bot.send_message(message.chat.id, 'pong')
+
+    @bot.message_handler(commands=['work'])
+    def work(message):
+
+        bot.send_message(message.chat.id, 'Job added.')
+        redis_queue.enqueue(rq_work, message.chat.id)
 
     bot.remove_webhook()
     bot.set_webhook(url=f'{env("WEB_APP_DOMAIN")}/{env("TELEGRAM_BOT_TOKEN")}')
