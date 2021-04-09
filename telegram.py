@@ -36,6 +36,15 @@ def setup_bot(**kwargs):
         bot.answer_callback_query(call.id, call.data)
         bot.delete_message(call.from_user.id, call.message.id)
 
+        _len = len(redis_queue.jobs)
+        status_text = \
+            "You video will start processing immediately." if _len == 0 else \
+             f"Your video is currently in position #{_len} in queue."
+
+        bot.send_message(
+            call.from_user.id, f"Thank you for your request! {status_text}" 
+        )
+
     @bot.message_handler(func=lambda message: True)
     def message_receiver(message):
         try:
