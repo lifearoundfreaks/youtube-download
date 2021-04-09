@@ -1,7 +1,7 @@
 ## Simple youtube video download bot
 It tries to solve the problem of adaptive youtube streams being without sound by using `ffmpeg` library to combine audio and video streams.
 
-Currently it is written in a way to only support mp4 streams. You should also note that telegram API only allows file sizes up to 50mb So this bot's capabilities are pretty limited.
+Currently it is written in a way to only support mp4 streams. You should also note that telegram API only allows file sizes up to 50mb so this bot's capabilities are pretty limited.
 
 ## Setting up your own
 I wrote it with [Heroku](https://www.heroku.com/home) in mind but I may rewrite it using [Docker](https://www.docker.com/) later to allow easier time hosting your own bot.
