@@ -8,6 +8,15 @@ import utils
 
 redis_queue = Queue(connection=conn)
 
+START_TEXT = (
+    "Hello! This is a simple youtube video download bot.\n\n"
+    "Just send me youtube links and pick a resolution. "
+    "When your video is processed it will be sent back to you.\n\n"
+    "Sadly, Telegram does not allow bots to send files larger than "
+    "50mb, so be aware of that. There may be a solution for that,"
+    " I will try to figure something out."
+)
+
 
 def setup_bot(**kwargs):
 
@@ -18,8 +27,7 @@ def setup_bot(**kwargs):
     @bot.message_handler(commands=['start'])
     def start(message):
 
-        bot.send_message(
-            message.chat.id, 'Hello, ' + message.from_user.first_name)
+        bot.send_message(message.chat.id, START_TEXT)
 
     @bot.callback_query_handler(func=lambda call: True)
     def callback_query(call):
