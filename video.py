@@ -74,6 +74,7 @@ def download(chat_id, url, resolution):
 
         get_bot().send_message(
             chat_id, 'Sorry, something was wrong with your video.')
+        raise e
 
     finally:
 
