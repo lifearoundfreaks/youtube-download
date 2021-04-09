@@ -2,6 +2,7 @@ from pytube import YouTube
 from utils import get_bot
 import ffmpeg
 import os
+from uuid import uuid4
 
 
 VIDEO_SETTINGS = {
@@ -35,28 +36,27 @@ def get_resolutions(url):
 
 def download(chat_id, url, resolution):
 
-    try:
-        os.remove('out.mp4')
-    except OSError:
-        pass
+    video_name, audio_name, out_name = (str(uuid4()) for _ in range(3))
 
     yt = YouTube(validate_url(url))
     video = yt.streams.filter(**VIDEO_SETTINGS).first().download(
-        filename='video')
-    video_stream = ffmpeg.input('video')
+        filename=video_name)
+    video_stream = ffmpeg.input(video_name)
     audio = yt.streams.filter(**AUDIO_SETTINGS).first().download(
-        filename='audio')
-    audio_stream = ffmpeg.input('audio')
+        filename=audio_name)
+    audio_stream = ffmpeg.input(audio_name)
 
     try:
-        ffmpeg.output(audio_stream, video_stream, 'out.mp4').run(quiet=True)
+        ffmpeg.output(
+            audio_stream, video_stream, f'{out_name}.mp4'
+        ).run(quiet=True)
     except ffmpeg.Error as e:
         pass
 
-    video = ffmpeg.input('video.mp4')
-    audio = ffmpeg.input('audio.mp4')
+    video = ffmpeg.input(f'{video_name}.mp4')
+    audio = ffmpeg.input(f'{audio_name}.mp4')
     out = ffmpeg.output(
-        video, audio, 'out.mp4', vcodec='copy',
+        video, audio, f'{out_name}.mp4', vcodec='copy',
         acodec='aac', strict='experimental')
     try:
         out.run(quiet=True)
@@ -64,6 +64,12 @@ def download(chat_id, url, resolution):
         pass
 
     get_bot().send_video(
-        chat_id, open('out.mp4', 'rb'),
+        chat_id, open(f'{out_name}.mp4', 'rb'),
         supports_streaming=True,
     )
+
+    try:
+        for filename in (video_name, audio_name, out_name):
+            os.remove(f'{filename}.mp4')
+    except OSError:
+        pass
