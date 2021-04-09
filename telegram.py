@@ -38,7 +38,7 @@ def setup_bot(**kwargs):
 
         _len = len(redis_queue.jobs)
         status_text = \
-            "You video will start processing immediately." if _len == 0 else \
+            "Your video will start processing immediately." if _len == 0 else \
              f"Your video is currently in position #{_len} in queue."
 
         bot.send_message(
