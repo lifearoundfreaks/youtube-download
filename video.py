@@ -2,6 +2,7 @@ from pytube import YouTube
 from utils import get_bot
 import ffmpeg
 import os
+from uuid import uuid4
 
 
 VIDEO_SETTINGS = {
@@ -16,9 +17,15 @@ AUDIO_SETTINGS = {
 }
 
 
+def validate_url(url):
+
+    split_url = url.split("&")
+    return split_url[0] if split_url else ""
+
+
 def get_resolutions(url):
 
-    yt = YouTube(url)
+    yt = YouTube(validate_url(url))
     if yt.publish_date is None:
         raise ValueError
     return list({
@@ -30,34 +37,48 @@ def get_resolutions(url):
 def download(chat_id, url, resolution):
 
     try:
-        os.remove('out.mp4')
-    except OSError:
-        pass
 
-    yt = YouTube(url)
-    video = yt.streams.filter(**VIDEO_SETTINGS).first().download(
-        filename='video')
-    video_stream = ffmpeg.input('video')
-    audio = yt.streams.filter(**AUDIO_SETTINGS).first().download(
-        filename='audio')
-    audio_stream = ffmpeg.input('audio')
+        video_name, audio_name, out_name = (str(uuid4()) for _ in range(3))
 
-    try:
-        ffmpeg.output(audio_stream, video_stream, 'out.mp4').run(quiet=True)
-    except ffmpeg.Error as e:
-        pass
+        yt = YouTube(validate_url(url))
+        video = yt.streams.filter(**VIDEO_SETTINGS).first().download(
+            filename=video_name)
+        video_stream = ffmpeg.input(video_name)
+        audio = yt.streams.filter(**AUDIO_SETTINGS).first().download(
+            filename=audio_name)
+        audio_stream = ffmpeg.input(audio_name)
 
-    video = ffmpeg.input('video.mp4')
-    audio = ffmpeg.input('audio.mp4')
-    out = ffmpeg.output(
-        video, audio, 'out.mp4', vcodec='copy',
-        acodec='aac', strict='experimental')
-    try:
-        out.run(quiet=True)
-    except ffmpeg.Error as e:
-        pass
+        try:
+            ffmpeg.output(
+                audio_stream, video_stream, f'{out_name}.mp4'
+            ).run(quiet=True)
+        except ffmpeg.Error as e:
+            pass
 
-    get_bot().send_video(
-        chat_id, open('out.mp4', 'rb'),
-        supports_streaming=True,
-    )
+        video = ffmpeg.input(f'{video_name}.mp4')
+        audio = ffmpeg.input(f'{audio_name}.mp4')
+        out = ffmpeg.output(
+            video, audio, f'{out_name}.mp4', vcodec='copy',
+            acodec='aac', strict='experimental')
+        try:
+            out.run(quiet=True)
+        except ffmpeg.Error as e:
+            pass
+
+        get_bot().send_video(
+            chat_id, open(f'{out_name}.mp4', 'rb'),
+            supports_streaming=True,
+        )
+
+    except Exception as e:
+
+        get_bot().send_message(
+            chat_id, 'Sorry, something was wrong with your video.')
+
+    finally:
+
+        try:
+            for filename in (video_name, audio_name, out_name):
+                os.remove(f'{filename}.mp4')
+        except OSError:
+            pass
