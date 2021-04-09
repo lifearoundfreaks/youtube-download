@@ -40,9 +40,10 @@ def setup_bot(**kwargs):
                 message.chat.id, 'Pick available resolution.',
                 reply_markup=keyboard
             )
-        except Exception:
+        except Exception as e:
             bot.send_message(
                 message.chat.id, 'There was something wrong with your link.')
+            raise e
 
     bot.remove_webhook()
     bot.set_webhook(url=f'{env("WEB_APP_DOMAIN")}/{env("TELEGRAM_BOT_TOKEN")}')
