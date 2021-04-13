@@ -18,7 +18,7 @@ def download(chat_id, v_url, a_url, time_from, time_to):
             f'-map 0:v:0 -map 1:a:0 "{temp_name}.mp4"'
         )
 
-        subprocess.run(command, shell=True)
+        subprocess.run(command, shell=True, stdout=subprocess.DEVNULL)
 
         get_bot().send_video(
             chat_id, open(f'{temp_name}.mp4', 'rb'),
