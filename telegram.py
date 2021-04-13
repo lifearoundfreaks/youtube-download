@@ -45,7 +45,7 @@ def setup_bot(**kwargs):
 
             redis_queue.enqueue(
                 video.download,
-                chat_id, v_url, a_url, time_from, time_to, res
+                chat_id, v_url, a_url, time_from, time_to
             )
 
             _len = len(redis_queue.jobs)
