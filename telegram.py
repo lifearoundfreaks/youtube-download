@@ -1,65 +1,70 @@
 import telebot
-from os import getenv as env
 import logging
+from os import getenv as env
 from rq import Queue
 from worker import conn
+
 import video
 import utils
+import const
+import exceptions
+from youtube_lookup import youtube_lookup
+from input_parser import Parser
 
 redis_queue = Queue(connection=conn)
-
-START_TEXT = (
-    "Hello! This is a simple youtube video download bot.\n\n"
-    "Just send me youtube links and pick a resolution. "
-    "When your video is processed it will be sent back to you.\n\n"
-    "Sadly, Telegram does not allow bots to send files larger than "
-    "50mb, so be aware of that. There may be a solution for that,"
-    " I will try to figure something out."
-)
 
 
 def setup_bot(**kwargs):
 
-    bot = utils.get_bot()
+    global logger
     logger = telebot.logger
     telebot.logger.setLevel(logging.DEBUG)
+
+    bot = utils.get_bot()
 
     @bot.message_handler(commands=['start'])
     def start(message):
 
-        bot.send_message(message.chat.id, START_TEXT)
-
-    @bot.callback_query_handler(func=lambda call: True)
-    def callback_query(call):
-        redis_queue.enqueue(
-            video.download, call.from_user.id, *call.data.split())
-        bot.answer_callback_query(call.id, call.data)
-        bot.delete_message(call.from_user.id, call.message.id)
-
-        _len = len(redis_queue.jobs)
-        status_text = \
-            "Your video will start processing immediately." if _len == 0 else \
-             f"Your video is currently in position #{_len} in queue."
-
-        bot.send_message(
-            call.from_user.id, f"Thank you for your request! {status_text}" 
-        )
+        bot.send_message(message.chat.id, const.START_TEXT)
 
     @bot.message_handler(func=lambda message: True)
     def message_receiver(message):
+
+        chat_id = message.chat.id
+
         try:
-            keyboard = telebot.types.InlineKeyboardMarkup([
-                [telebot.types.InlineKeyboardButton(
-                    resolution, callback_data=f"{message.text} {resolution}")]
-                for resolution in video.get_resolutions(message.text)
-            ])
-            bot.send_message(
-                message.chat.id, 'Pick available resolution.',
-                reply_markup=keyboard
+
+            url, time_from, time_to, res = Parser(message.text).all()
+
+            try:
+                v_url, a_url = youtube_lookup(url, res)
+            except Exception:
+                raise exceptions.InputValidationException(
+                    "There was something wrong with the link you sent."
+                )
+
+            redis_queue.enqueue(
+                video.download,
+                chat_id, v_url, a_url, time_from, time_to, res
             )
-        except Exception as e:
+
+            _len = len(redis_queue.jobs)
+            status_text = \
+                f"Your video is currently in position #{_len} in queue." \
+                if _len else "Your video will start processing immediately."
+
             bot.send_message(
-                message.chat.id, 'There was something wrong with your link.')
+                chat_id, f"Thank you for your request! {status_text}"
+            )
+
+        except (
+            exceptions.InputValidationException,
+            exceptions.ForbiddenUserOperation,
+        ) as e:
+            bot.send_message(chat_id, e)
+
+        except Exception as e:
+            bot.send_message(chat_id, 'Oops! Something went wrong.')
             raise e
 
     bot.remove_webhook()

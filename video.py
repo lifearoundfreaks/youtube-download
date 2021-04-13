@@ -1,72 +1,27 @@
-from pytube import YouTube
-from utils import get_bot
-import ffmpeg
 import os
+import subprocess
 from uuid import uuid4
 
-
-VIDEO_SETTINGS = {
-    'only_video': True,
-    'adaptive': True,
-    'subtype': "mp4"
-}
-
-AUDIO_SETTINGS = {
-    'only_audio': True,
-    'subtype': "mp4"
-}
+from utils import get_bot
 
 
-def validate_url(url):
-
-    split_url = url.split("&")
-    return split_url[0] if split_url else ""
-
-
-def get_resolutions(url):
-
-    yt = YouTube(validate_url(url))
-    if yt.publish_date is None:
-        raise ValueError
-    return list({
-        stream.resolution: None
-        for stream in yt.streams.filter(**VIDEO_SETTINGS).asc()
-    })
-
-
-def download(chat_id, url, resolution):
+def download(chat_id, v_url, a_url, time_from, time_to):
 
     try:
 
-        video_name, audio_name, out_name = (str(uuid4()) for _ in range(3))
+        temp_name = str(uuid4())
 
-        yt = YouTube(validate_url(url))
-        video = yt.streams.filter(**VIDEO_SETTINGS).first().download(
-            filename=video_name)
-        video_stream = ffmpeg.input(video_name)
-        audio = yt.streams.filter(**AUDIO_SETTINGS).first().download(
-            filename=audio_name)
-        audio_stream = ffmpeg.input(audio_name)
+        command = (
+            f'ffmpeg -ss {time_from} -to {time_to} -i "{v_url}" '
+            f'-ss {time_from} -to {time_to} -i "{a_url}" '
+            "-acodec aac -b:a 192k -avoid_negative_ts make_zero "
+            f'-map 0:v:0 -map 1:a:0 "{temp_name}.mp4"'
+        )
 
-        try:
-            ffmpeg.output(
-                audio_stream, video_stream, f'{out_name}.mp4'
-            ).run(quiet=True)
-        except ffmpeg.Error as e:
-            pass
-
-        video = ffmpeg.input(f'{video_name}.mp4')
-        audio = ffmpeg.input(f'{audio_name}.mp4')
-        out = ffmpeg.output(
-            video, audio, f'{out_name}.mp4', vcodec='copy',
-            acodec='aac', strict='experimental')
-        try:
-            out.run(quiet=True)
-        except ffmpeg.Error as e:
-            pass
+        subprocess.run(command, shell=True)
 
         get_bot().send_video(
-            chat_id, open(f'{out_name}.mp4', 'rb'),
+            chat_id, open(f'{temp_name}.mp4', 'rb'),
             supports_streaming=True,
         )
 
@@ -79,7 +34,6 @@ def download(chat_id, url, resolution):
     finally:
 
         try:
-            for filename in (video_name, audio_name, out_name):
-                os.remove(f'{filename}.mp4')
+            os.remove(f'{temp_name}.mp4')
         except OSError:
             pass
