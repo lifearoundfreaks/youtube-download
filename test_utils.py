@@ -1,5 +1,5 @@
 import unittest
-from video import validate_url
+from utils import validate_url
 
 
 class TestUrlValidation(unittest.TestCase):

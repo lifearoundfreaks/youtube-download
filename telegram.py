@@ -2,13 +2,13 @@ import telebot
 import logging
 from os import getenv as env
 from rq import Queue
-from pytube import YouTube
 from worker import conn
 
 import video
 import utils
 import const
 import exceptions
+from youtube_lookup import youtube_lookup
 from input_parser import Parser
 
 redis_queue = Queue(connection=conn)
@@ -37,9 +37,7 @@ def setup_bot(**kwargs):
             url, time_from, time_to, res = Parser(message.text).all()
 
             try:
-                yt = YouTube(utils.validate_url(url))
-                v_url = yt.streams.filter(**const.VIDEO_SETTINGS).first().url
-                a_url = yt.streams.filter(**const.AUDIO_SETTINGS).first().url
+                v_url, a_url = youtube_lookup(url, res)
             except Exception:
                 raise exceptions.InputValidationException(
                     "There was something wrong with the link you sent."

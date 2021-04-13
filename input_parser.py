@@ -1,23 +1,12 @@
+from operator import attrgetter
+
 import exceptions
 import const
-from operator import attrgetter
+from utils import is_int
 
 WRONG_INPUT_EXCEPTION = exceptions.InputValidationException(
     f'Wrong input.\n\n{const.BOT_INPUT_TIP}'
 )
-
-
-def is_int(string):
-
-    try:
-
-        int(string)
-
-    except ValueError:
-
-        return False
-
-    return True
 
 
 def check_offset_validity(offset):
@@ -48,10 +37,7 @@ class VideoTimecode:
 
             raise WRONG_INPUT_EXCEPTION
 
-        else:
-
-            hours, minutes, seconds = \
-                process_function(*split_input)
+        hours, minutes, seconds = process_function(*split_input)
 
         hours += kwargs.get('hours', 0)
         minutes += kwargs.get('minutes', 0)
@@ -74,13 +60,14 @@ class VideoTimecode:
 
         return string.split(":")
 
-    def _convert_time(self, string, max=60):
+    def _convert_time(self, string, maximum=60):
 
         try:
 
             value = int(string)
-            if value > max or value < 0:
+            if value > maximum or value < 0:
                 raise ValueError
+            return value
 
         except ValueError:
 
@@ -97,7 +84,7 @@ class VideoTimecode:
     def _process_triple(self, hours, minutes, seconds):
 
         return (
-            self._convert_time(hours, max=99),
+            self._convert_time(hours, maximum=99),
             self._convert_time(minutes),
             self._convert_time(seconds),
         )
@@ -219,40 +206,40 @@ class Parser:
 
         raise WRONG_INPUT_EXCEPTION
 
-    def _process_triple(self, url, time_from, ambiguous):
+    def _process_triple(self, url, ambiguous_time, ambiguous):
 
+        time_tag = self._resolve_ambiguous(ambiguous_time)
         ambiguous_tag = self._resolve_ambiguous(ambiguous)
 
-        if ambiguous_tag == self.TIME_OFFSET_TAG:
-            return (
-                url,
-                VideoTimecode(time_from).timestamp,
-                VideoTimecode(
-                    time_from, seconds=self._convert_time_offset(ambiguous)
-                ).timestamp,
-                const.BEST_RESOLUTION_TAG,
+        end_timecode = VideoTimecode(seconds=const.MAX_VIDEO_SECONDS)
+        if time_tag == self.TIMESTAMP_TAG:
+            start_timecode = VideoTimecode(ambiguous_time)
+            end_timecode = VideoTimecode(
+                start_timecode.timestamp, seconds=const.MAX_VIDEO_SECONDS)
+        elif time_tag == self.TIME_OFFSET_TAG:
+            if ambiguous_tag != self.RESOLUTION_TAG:
+                raise WRONG_INPUT_EXCEPTION
+            start_timecode = VideoTimecode(seconds=const.DEFAULT_TIME)
+            end_timecode = VideoTimecode(
+                seconds=const.DEFAULT_TIME +
+                self._convert_time_offset(ambiguous_time)
             )
+        else:
+            raise WRONG_INPUT_EXCEPTION
 
-        elif ambiguous_tag == self.RESOLUTION_TAG:
-            return (
-                url,
-                VideoTimecode(time_from).timestamp,
-                VideoTimecode(
-                    time_from, seconds=const.MAX_VIDEO_SECONDS
-                ).timestamp,
-                ambiguous,
-            )
+        res = const.BEST_RESOLUTION_TAG
+        if ambiguous_tag == self.TIMESTAMP_TAG:
+            end_timecode = VideoTimecode(ambiguous, start=start_timecode)
 
-        elif ambiguous_tag == self.TIMESTAMP_TAG:
-            start_timecode = VideoTimecode(time_from)
-            return (
-                url,
+        elif ambiguous_tag == self.TIME_OFFSET_TAG:
+            end_timecode = VideoTimecode(
                 start_timecode.timestamp,
-                VideoTimecode(ambiguous, start=start_timecode).timestamp,
-                const.BEST_RESOLUTION_TAG,
+                seconds=self._convert_time_offset(ambiguous)
             )
+        else:
+            res = ambiguous
 
-        raise WRONG_INPUT_EXCEPTION
+        return (url, start_timecode.timestamp, end_timecode.timestamp, res)
 
     def _process_quadruple(self, url, time_from, ambiguous, resolution):
 
@@ -270,5 +257,5 @@ class Parser:
             url,
             start_timecode.timestamp,
             end_timestamp,
-            const.BEST_RESOLUTION_TAG,
+            resolution,
         )
