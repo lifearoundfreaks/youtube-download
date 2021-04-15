@@ -53,7 +53,6 @@ class TestParser(unittest.TestCase):
             'video_url 15:21 15:20',
             'video_url 15:21 16:22',
             'video_url -5s',
-            'video_url 480p 25s',
             'video_url 25s 25s',
             'video_url 25s 00:05',
         ]
@@ -65,31 +64,28 @@ class TestParser(unittest.TestCase):
 
         expected_results = [
             ('video_url', (
-                'video_url', '00:00:00', '00:01:00', const.BEST_RESOLUTION_TAG
-            )),
-            ('video_url 480p', (
-                'video_url', '00:00:00', '00:01:00', '480p'
+                'video_url', '00:00:00', '00:01:00',
             )),
             ('video_url 20s', (
-                'video_url', '00:00:00', '00:00:20', const.BEST_RESOLUTION_TAG
+                'video_url', '00:00:00', '00:00:20',
             )),
             ('video_url 15 25', (
-                'video_url', '00:00:15', '00:00:25', const.BEST_RESOLUTION_TAG
+                'video_url', '00:00:15', '00:00:25',
             )),
             ('video_url 00:15 25s', (
-                'video_url', '00:00:15', '00:00:40', const.BEST_RESOLUTION_TAG
+                'video_url', '00:00:15', '00:00:40',
             )),
-            ('video_url 25s 480p', (
-                'video_url', '00:00:00', '00:00:25', '480p'
+            ('video_url 25s', (
+                'video_url', '00:00:00', '00:00:25'
             )),
-            ('video_url 0:15 720p', (
-                'video_url', '00:00:15', '00:01:15', '720p'
+            ('video_url 0:15', (
+                'video_url', '00:00:15', '00:01:15',
             )),
-            ('video_url 00:0:15 720p', (
-                'video_url', '00:00:15', '00:01:15', '720p'
+            ('video_url 00:0:15', (
+                'video_url', '00:00:15', '00:01:15',
             )),
-            ('video_url 01:00:15 59s 720p', (
-                'video_url', '01:00:15', '01:01:14', '720p'
+            ('video_url 01:00:15 59s', (
+                'video_url', '01:00:15', '01:01:14',
             )),
         ]
 

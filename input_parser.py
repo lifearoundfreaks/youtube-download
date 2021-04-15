@@ -99,7 +99,6 @@ class VideoTimecode:
 class Parser:
 
     TIME_OFFSET_TAG = 'time_offset'
-    RESOLUTION_TAG = 'resolution'
     TIMESTAMP_TAG = 'timestamp'
 
     def __init__(self, input_string):
@@ -110,7 +109,6 @@ class Parser:
             1: self._process_single,
             2: self._process_double,
             3: self._process_triple,
-            4: self._process_quadruple,
         }.get(len(split_input))
 
         if process_function is None:
@@ -119,12 +117,12 @@ class Parser:
 
         else:
 
-            self.url, self.time_from, self.time_to, self.res = \
+            self.url, self.time_from, self.time_to = \
                 process_function(*split_input)
 
     def all(self):
 
-        return attrgetter('url', 'time_from', 'time_to', 'res')(self)
+        return attrgetter('url', 'time_from', 'time_to')(self)
 
     def _get_default_start(self):
 
@@ -144,10 +142,6 @@ class Parser:
 
             return self.TIME_OFFSET_TAG
 
-        elif ambiguous[-1:] == 'p' and is_int(ambiguous[:-1]):
-
-            return self.RESOLUTION_TAG
-
         else:
 
             return self.TIMESTAMP_TAG
@@ -166,7 +160,6 @@ class Parser:
             VideoTimecode(
                 seconds=const.DEFAULT_TIME + const.MAX_VIDEO_SECONDS
             ).timestamp,
-            const.BEST_RESOLUTION_TAG,
         )
 
     def _process_double(self, url, ambiguous):
@@ -181,17 +174,6 @@ class Parser:
                     seconds=const.DEFAULT_TIME
                     + self._convert_time_offset(ambiguous)
                 ).timestamp,
-                const.BEST_RESOLUTION_TAG,
-            )
-
-        elif ambiguous_tag == self.RESOLUTION_TAG:
-            return (
-                url,
-                VideoTimecode(seconds=const.DEFAULT_TIME).timestamp,
-                VideoTimecode(
-                    seconds=const.DEFAULT_TIME + const.MAX_VIDEO_SECONDS
-                ).timestamp,
-                ambiguous,
             )
 
         elif ambiguous_tag == self.TIMESTAMP_TAG:
@@ -201,61 +183,32 @@ class Parser:
                 VideoTimecode(
                     ambiguous, seconds=const.MAX_VIDEO_SECONDS
                 ).timestamp,
-                const.BEST_RESOLUTION_TAG,
             )
 
         raise WRONG_INPUT_EXCEPTION
 
-    def _process_triple(self, url, ambiguous_time, ambiguous):
+    def _process_triple(self, url, first_time, second_time):
 
-        time_tag = self._resolve_ambiguous(ambiguous_time)
-        ambiguous_tag = self._resolve_ambiguous(ambiguous)
+        first_tag = self._resolve_ambiguous(first_time)
+        second_tag = self._resolve_ambiguous(second_time)
 
         end_timecode = VideoTimecode(seconds=const.MAX_VIDEO_SECONDS)
-        if time_tag == self.TIMESTAMP_TAG:
-            start_timecode = VideoTimecode(ambiguous_time)
+        if first_tag == self.TIMESTAMP_TAG:
+            start_timecode = VideoTimecode(first_time)
             end_timecode = VideoTimecode(
                 start_timecode.timestamp, seconds=const.MAX_VIDEO_SECONDS)
-        elif time_tag == self.TIME_OFFSET_TAG:
-            if ambiguous_tag != self.RESOLUTION_TAG:
-                raise WRONG_INPUT_EXCEPTION
-            start_timecode = VideoTimecode(seconds=const.DEFAULT_TIME)
-            end_timecode = VideoTimecode(
-                seconds=const.DEFAULT_TIME +
-                self._convert_time_offset(ambiguous_time)
-            )
         else:
             raise WRONG_INPUT_EXCEPTION
 
-        res = const.BEST_RESOLUTION_TAG
-        if ambiguous_tag == self.TIMESTAMP_TAG:
-            end_timecode = VideoTimecode(ambiguous, start=start_timecode)
+        if second_tag == self.TIMESTAMP_TAG:
+            end_timecode = VideoTimecode(second_time, start=start_timecode)
 
-        elif ambiguous_tag == self.TIME_OFFSET_TAG:
+        elif second_tag == self.TIME_OFFSET_TAG:
             end_timecode = VideoTimecode(
                 start_timecode.timestamp,
-                seconds=self._convert_time_offset(ambiguous)
+                seconds=self._convert_time_offset(second_time)
             )
         else:
-            res = ambiguous
-
-        return (url, start_timecode.timestamp, end_timecode.timestamp, res)
-
-    def _process_quadruple(self, url, time_from, ambiguous, resolution):
-
-        ambiguous_tag = self._resolve_ambiguous(ambiguous)
-        if ambiguous_tag not in (self.TIME_OFFSET_TAG, self.TIMESTAMP_TAG):
             raise WRONG_INPUT_EXCEPTION
 
-        start_timecode = VideoTimecode(time_from)
-        end_timestamp = VideoTimecode(
-            time_from, seconds=self._convert_time_offset(ambiguous)
-        ).timestamp if ambiguous_tag == self.TIME_OFFSET_TAG else \
-            VideoTimecode(ambiguous, start=start_timecode)
-
-        return (
-            url,
-            start_timecode.timestamp,
-            end_timestamp,
-            resolution,
-        )
+        return (url, start_timecode.timestamp, end_timecode.timestamp)

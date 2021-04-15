@@ -34,18 +34,17 @@ def setup_bot(**kwargs):
 
         try:
 
-            url, time_from, time_to, res = Parser(message.text).all()
+            url, time_from, time_to = Parser(message.text).all()
 
             try:
-                v_url, a_url = youtube_lookup(url, res)
+                stream_url = youtube_lookup(url)
             except Exception:
                 raise exceptions.InputValidationException(
                     "There was something wrong with the link you sent."
                 )
 
             redis_queue.enqueue(
-                video.download,
-                chat_id, v_url, a_url, time_from, time_to
+                video.download, chat_id, stream_url, time_from, time_to
             )
 
             _len = len(redis_queue.jobs)

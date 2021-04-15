@@ -1,7 +1,7 @@
 ## Simple youtube video download bot
-It tries to solve the problem of adaptive youtube streams being without sound by using `ffmpeg` library to combine audio and video streams.
+At first I tried to solve the problem of adaptive youtube streams being without sound by using `ffmpeg` library to combine audio and video streams. That seemed to work fine until I tried to implement video cropping feature to allow users to download short portions of the video. Sadly, I could not figure out a way to make this process fast enough and process memory also seemed to be constantly exceeded.
 
-Currently it is written in a way to only support mp4 streams. You should also note that telegram API only allows file sizes up to 50mb so this bot's capabilities are pretty limited.
+So instead of focusing on this feature I decided to instead fully devote this bot's functionality to video cropping, so no high resolutions with current implementation.
 
 ## Setting up your own
 I wrote it with [Heroku](https://www.heroku.com/home) in mind but I may rewrite it using [Docker](https://www.docker.com/) later to allow easier time hosting your own bot.

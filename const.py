@@ -1,11 +1,5 @@
 VIDEO_SETTINGS = {
-    'only_video': True,
-    'adaptive': True,
-    'subtype': 'mp4'
-}
-
-AUDIO_SETTINGS = {
-    'only_audio': True,
+    'progressive': True,
     'subtype': 'mp4'
 }
 
@@ -13,26 +7,24 @@ MAX_VIDEO_SECONDS = 60
 
 DEFAULT_TIME = 0
 
-BEST_RESOLUTION_TAG = 'best'
-
 BOT_INPUT_TIP = (
     "You need to send me your video in one of the following formats:\n"
-    "`<youtube link>`\n"
-    "`<youtube link> <timestamp from>`\n"
-    "`<youtube link> <timestamp from> <timestamp to>`\n\n"
-    "`<youtube link> <timestamp from> <amount of seconds>s`\n\n"
+    "<code>{youtube link}</code>\n"
+    "<code>{youtube link} {timestamp from}</code>\n"
+    "<code>{youtube link} {timestamp from} {timestamp to}</code>\n\n"
+    "<code>{youtube link} {timestamp from} {amount of seconds}s</code>\n\n"
     "For example:\n"
-    "`https://www.youtube.com/watch?v=dQw4w9WgXcQ`\n"
-    "`https://www.youtube.com/watch?v=dQw4w9WgXcQ 1:31`\n"
-    "`https://www.youtube.com/watch?v=dQw4w9WgXcQ 480p`\n\n"
-    "`https://www.youtube.com/watch?v=dQw4w9WgXcQ 00:01:31 2:15`\n"
-    "`https://www.youtube.com/watch?v=dQw4w9WgXcQ 1:31 15s`\n"
-    "`https://www.youtube.com/watch?v=dQw4w9WgXcQ 1:31 15s 720p`\n\n"
+    "<code>https://www.youtube.com/watch?v=dQw4w9WgXcQ</code>\n"
+    "<code>https://www.youtube.com/watch?v=dQw4w9WgXcQ 1:31</code>\n"
+    "<code>https://www.youtube.com/watch?v=dQw4w9WgXcQ 00:01:31 2:15</code>\n"
+    "<code>https://www.youtube.com/watch?v=dQw4w9WgXcQ 1:31 15s</code>\n"
+    "<code>https://www.youtube.com/watch?v=dQw4w9WgXcQ 15 30</code>\n"
     "In case of missing starting timestamp default value will be "
     f"{DEFAULT_TIME}. Default and maximum video length is "
     f"{MAX_VIDEO_SECONDS} seconds."
 )
 
 START_TEXT = (
-    "Under construction."
+    "Hello, I am a bot for downloading short parts of youtube videos.\n"
+    f"\n{BOT_INPUT_TIP}"
 )
