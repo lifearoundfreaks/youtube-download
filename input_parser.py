@@ -1,4 +1,5 @@
 from operator import attrgetter
+from re import findall
 
 import exceptions
 import const
@@ -50,6 +51,11 @@ class VideoTimecode:
         if 'start' in kwargs:
 
             check_offset_validity(self - kwargs['start'])
+
+    @property
+    def total_seconds(self):
+
+        return self.hours * 3600 + self.minutes * 60 + self.seconds
 
     @property
     def timestamp(self):
@@ -124,9 +130,11 @@ class Parser:
 
         return attrgetter('url', 'time_from', 'time_to')(self)
 
-    def _get_default_start(self):
+    def _parse_start_from_url(self, url):
 
-        return const.DEFAULT_TIME
+        timecode_list = findall('t=(\\d+)', url)
+        return VideoTimecode(seconds=int(timecode_list[0])) \
+            if timecode_list else VideoTimecode()
 
     def _get_default_stop(self, start):
 
@@ -154,38 +162,42 @@ class Parser:
 
     def _process_single(self, url):
 
+        start = self._parse_start_from_url(url)
+
         return (
             url,
-            VideoTimecode(seconds=const.DEFAULT_TIME).timestamp,
+            start.timestamp,
             VideoTimecode(
-                seconds=const.DEFAULT_TIME + const.MAX_VIDEO_SECONDS
+                seconds=start.total_seconds + const.MAX_VIDEO_SECONDS
             ).timestamp,
         )
 
     def _process_double(self, url, ambiguous):
 
         ambiguous_tag = self._resolve_ambiguous(ambiguous)
-
-        if ambiguous_tag == self.TIME_OFFSET_TAG:
-            return (
-                url,
-                VideoTimecode(seconds=const.DEFAULT_TIME).timestamp,
-                VideoTimecode(
-                    seconds=const.DEFAULT_TIME
-                    + self._convert_time_offset(ambiguous)
-                ).timestamp,
+        url_start = self._parse_start_from_url(url)
+        if url_start.total_seconds:
+            real_start = url_start
+            real_end = VideoTimecode(
+                seconds=real_start.total_seconds +
+                self._convert_time_offset(ambiguous)
+            ) if ambiguous_tag == self.TIME_OFFSET_TAG else VideoTimecode(
+                ambiguous, start=real_start
             )
-
-        elif ambiguous_tag == self.TIMESTAMP_TAG:
-            return (
-                url,
-                VideoTimecode(ambiguous).timestamp,
-                VideoTimecode(
+        else:
+            if ambiguous_tag == self.TIME_OFFSET_TAG:
+                real_start = VideoTimecode(seconds=const.DEFAULT_TIME)
+                real_end = VideoTimecode(
+                    seconds=const.DEFAULT_TIME +
+                    self._convert_time_offset(ambiguous)
+                )
+            else:
+                real_start = VideoTimecode(ambiguous)
+                real_end = VideoTimecode(
                     ambiguous, seconds=const.MAX_VIDEO_SECONDS
-                ).timestamp,
-            )
+                )
 
-        raise WRONG_INPUT_EXCEPTION
+        return url, real_start.timestamp, real_end.timestamp
 
     def _process_triple(self, url, first_time, second_time):
 

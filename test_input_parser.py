@@ -55,6 +55,8 @@ class TestParser(unittest.TestCase):
             'video_url -5s',
             'video_url 25s 25s',
             'video_url 25s 00:05',
+            'video_url&t=66 1:00',
+            'video_url&t=50&someotherjunk 20',
         ]
 
         for input_string in exception_cases:
@@ -65,6 +67,21 @@ class TestParser(unittest.TestCase):
         expected_results = [
             ('video_url', (
                 'video_url', '00:00:00', '00:01:00',
+            )),
+            ('video_url&t=50', (
+                'video_url&t=50', '00:00:50', '00:01:50',
+            )),
+            ('video_url&t=60', (
+                'video_url&t=60', '00:01:00', '00:02:00',
+            )),
+            ('video_url&t=66', (
+                'video_url&t=66', '00:01:06', '00:02:06',
+            )),
+            ('video_url&t=66 2:00', (
+                'video_url&t=66', '00:01:06', '00:02:00',
+            )),
+            ('video_url&t=50&someotherjunk', (
+                'video_url&t=50&someotherjunk', '00:00:50', '00:01:50',
             )),
             ('video_url 20s', (
                 'video_url', '00:00:00', '00:00:20',
