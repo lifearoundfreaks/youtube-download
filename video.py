@@ -16,7 +16,7 @@ def run(command):
 def download_stream(url, time_from, time_to, name):
 
     run(f'ffmpeg -ss {time_from} -to {time_to} -i "{url}" '
-        f'-c:v copy -c:a copy {name}.mp4')
+        f'-c:v copy -c:a copy -avoid_negative_ts make_zero {name}.mp4')
 
 
 def silently_delete(*filenames):
