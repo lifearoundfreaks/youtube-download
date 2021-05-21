@@ -3,6 +3,7 @@ import logging
 from os import getenv as env
 from rq import Queue
 from worker import conn
+from logging import exception
 
 import video
 import utils
@@ -38,7 +39,8 @@ def setup_bot(**kwargs):
 
             try:
                 stream_url = youtube_lookup(url)
-            except Exception:
+            except Exception as e:
+                exception(e)
                 raise exceptions.InputValidationException(
                     "There was something wrong with the link you sent."
                 )
