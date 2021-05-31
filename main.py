@@ -3,6 +3,8 @@ from os import getenv as env
 from telegram import setup_bot
 from waitress import serve
 from json import loads
+from telebot.types import Update
+from worker import conn as redis
 
 server = Flask(__name__)
 handle_bot_update = setup_bot()
@@ -18,12 +20,14 @@ def ping():
 def telegram_update():
 
     request_data = request.stream.read().decode("utf-8")
-
-    # TODO remove this part when done testing on live
+    update = Update.de_json(request_data)
+    redis_response = redis.set(
+        "recentTelegramChatUpdates", str(update.update_id), ex=300
+    )
     print("-"*200)
-    print(loads(request_data))
-
-    handle_bot_update(request_data)
+    print(str(update.update_id))
+    print(redis_response)
+    handle_bot_update(update)
 
     return "!", 200
 

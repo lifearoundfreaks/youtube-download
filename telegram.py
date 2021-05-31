@@ -74,7 +74,7 @@ def setup_bot(**kwargs):
     bot.remove_webhook()
     bot.set_webhook(url=f'{env("WEB_APP_DOMAIN")}/{env("TELEGRAM_BOT_TOKEN")}')
 
-    def handle_update(request_json):
-        bot.process_new_updates([telebot.types.Update.de_json(request_json)])
+    def handle_update(update):
+        bot.process_new_updates([update])
 
     return handle_update
