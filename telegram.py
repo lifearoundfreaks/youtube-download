@@ -3,7 +3,7 @@ import logging
 from os import getenv as env
 from rq import Queue
 from worker import conn
-from logging import exception
+from logging import exception, info
 
 import video
 import utils
@@ -30,6 +30,9 @@ def setup_bot(**kwargs):
 
     @bot.message_handler(func=lambda message: True)
     def message_receiver(message):
+
+        if message.text:
+            info(message.text)
 
         chat_id = message.chat.id
 
