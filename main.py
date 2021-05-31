@@ -2,7 +2,6 @@ from flask import Flask, request
 from os import getenv as env
 from telegram import setup_bot
 from waitress import serve
-from json import loads
 from telebot.types import Update
 from worker import conn as redis
 
@@ -21,13 +20,9 @@ def telegram_update():
 
     request_data = request.stream.read().decode("utf-8")
     update = Update.de_json(request_data)
-    redis_response = redis.set(
-        "recentTelegramChatUpdates", str(update.update_id), ex=300
-    )
-    print("-"*200)
-    print(str(update.update_id))
-    print(redis_response)
-    handle_bot_update(update)
+    redis_response = redis.sadd("telegramChatUpdates", str(update.update_id))
+    if redis_response:
+        handle_bot_update(update)
 
     return "!", 200
 
